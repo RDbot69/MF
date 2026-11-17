@@ -1,0 +1,1385 @@
+MCA / MICROCONTROLLERS & VLSI DESIGN LAB - ALL PRACTICAL CODES
+========================================================================
+Individual .c/.h files are arranged in folders by practical number.
+This master file concatenates every source file for quick revision.
+
+
+##############################################################################
+Practical_1_8051_LEDs/alternate_leds.c
+##############################################################################
+#include <reg51.h>
+
+void delay(void)
+{
+    int i;
+    for (i = 0; i < 50000; i++);
+}
+
+void main(void)
+{
+    while (1)
+    {
+        P2 = 0xAA;       // 10101010
+        delay();
+        P2 = 0x55;       // 01010101
+        delay();
+    }
+}
+
+
+##############################################################################
+Practical_1_8051_LEDs/bcd_counter.c
+##############################################################################
+#include <reg51.h>
+
+void delay(unsigned int t);
+
+void main(void)
+{
+    unsigned char count;
+
+    while (1)
+    {
+        for (count = 0; count <= 9; count++)
+        {
+            P2 = count;
+            delay(1000);
+        }
+    }
+}
+
+void delay(unsigned int t)
+{
+    unsigned int i, j;
+    for (i = 0; i < t; i++)
+    {
+        for (j = 0; j < 1275; j++)
+        {
+        }
+    }
+}
+
+
+##############################################################################
+Practical_1_8051_LEDs/binary_counter_0_to_15.c
+##############################################################################
+#include <reg51.h>
+
+void delay(unsigned int t);
+
+void main(void)
+{
+    unsigned char count;
+
+    while (1)
+    {
+        for (count = 0; count <= 15; count++)
+        {
+            P2 = count;
+            delay(1000);
+        }
+    }
+}
+
+void delay(unsigned int t)
+{
+    unsigned int i, j;
+    for (i = 0; i < t; i++)
+    {
+        for (j = 0; j < 1275; j++)
+        {
+        }
+    }
+}
+
+
+##############################################################################
+Practical_1_8051_LEDs/led_blinking.c
+##############################################################################
+#include <reg51.h>
+
+void delay(void);
+
+void main(void)
+{
+    while (1)
+    {
+        P2 = 0xFF;       // All LEDs ON (11111111)
+        delay();
+        P2 = 0x00;       // All LEDs OFF (00000000)
+        delay();
+    }
+}
+
+void delay(void)
+{
+    int i, j;
+    for (i = 0; i < 500; i++)
+    {
+        for (j = 0; j < 1000; j++);
+    }
+}
+
+
+##############################################################################
+Practical_2_8051_Seven_Segment/multiplexed_00_to_99.c
+##############################################################################
+#include <reg51.h>
+
+#define seg_unit 0x08
+#define seg_tens 0x04
+
+void delay(void)
+{
+    int i, j;
+    for (i = 0; i < 15; i++)
+    {
+        for (j = 0; j < 10; j++);
+    }
+}
+
+void main(void)
+{
+    int seg_code[10] = {
+        0xC0, 0xF9, 0xA4, 0xB0, 0x99,
+        0x92, 0x82, 0xF8, 0x80, 0x90
+    };
+    int cnt, temp, i, num;
+
+    while (1)
+    {
+        for (cnt = 0; cnt <= 99; cnt++)
+        {
+            for (i = 0; i < 100; i++)
+            {
+                num = cnt;
+                temp = num % 10;
+                P2 = seg_unit;
+                P1 = seg_code[temp];
+                delay();
+
+                num = cnt;
+                temp = num / 10;
+                P2 = seg_tens;
+                P1 = seg_code[temp];
+                delay();
+            }
+        }
+    }
+}
+
+
+##############################################################################
+Practical_2_8051_Seven_Segment/single_digit_0_to_9.c
+##############################################################################
+#include <reg51.h>
+
+void delay(void)
+{
+    int i, j;
+    for (i = 0; i < 500; i++)
+    {
+        for (j = 0; j < 100; j++)
+        {
+        }
+    }
+}
+
+void main(void)
+{
+    int seg_code[10] = {
+        0xC0, 0xF9, 0xA4, 0xB0, 0x99,
+        0x92, 0x82, 0xF8, 0x80, 0x90
+    };
+    int k;
+
+    while (1)
+    {
+        for (k = 0; k < 10; k++)
+        {
+            P1 = seg_code[k];
+            P2 = 0x01;
+            delay();
+        }
+    }
+}
+
+
+##############################################################################
+Practical_3_8051_Waveforms/square_wave_timer0.c
+##############################################################################
+#include <reg51.h>
+
+void delay(void);
+
+void main(void)
+{
+    while (1)
+    {
+        P0 = 0xFF;       // Set Port 0 HIGH
+        delay();         // Generate HIGH time
+
+        P0 = 0x00;       // Set Port 0 LOW
+        delay();         // Generate LOW time
+    }
+}
+
+// Timer 0 delay function
+void delay(void)
+{
+    TMOD = 0x01;         // Timer 0, Mode 1 (16-bit timer)
+    TL0 = 0x01;          // Load lower byte of Timer 0
+    TH0 = 0xFF;          // Load higher byte of Timer 0
+    TR0 = 1;             // Start Timer 0
+
+    while (TF0 == 0);    // Wait until timer overflows
+
+    TR0 = 0;             // Stop Timer 0
+    TF0 = 0;             // Clear Timer 0 overflow flag
+}
+
+
+##############################################################################
+Practical_3_8051_Waveforms/triangular_wave_port1.c
+##############################################################################
+#include <reg51.h>
+
+void delay(void);
+
+void main(void)
+{
+    int i, j;
+
+    while (1)
+    {
+        // Increase value from 0 to 255
+        for (i = 0; i <= 255; i++)
+        {
+            P1 = i;      // Send increasing value to Port 1
+            delay();     // Small delay
+        }
+
+        // Decrease value from 255 to 0
+        for (j = 255; j >= 0; j--)
+        {
+            P1 = j;      // Send decreasing value to Port 1
+            delay();     // Small delay
+        }
+    }
+}
+
+// The supplied triangular-wave listing declares delay() but does not define it.
+// This uses the Timer 0 delay function shown with the square-wave listing.
+void delay(void)
+{
+    TMOD = 0x01;
+    TL0 = 0x01;
+    TH0 = 0xFF;
+    TR0 = 1;
+    while (TF0 == 0);
+    TR0 = 0;
+    TF0 = 0;
+}
+
+
+##############################################################################
+Practical_4_LPC2148_Keypad/LCD.c
+##############################################################################
+#include <lpc214x.h>
+
+#define LCD_PORT 0x00FF0000
+#define EN (1 << 10)
+#define RS (1 << 11)
+#define RW (1 << 20)
+#define LCD_SHIFT 16
+
+void delay(unsigned int time)
+{
+    int i, j;
+    for (i = 0; i < time; i++)
+        for (j = 0; j < 200; j++);
+}
+
+void LCD_strobe(void)
+{
+    delay(100);
+    IOSET0 = EN;
+    delay(100);
+    IOCLR0 = EN;
+    delay(100);
+}
+
+void LCD_data(unsigned char ch)
+{
+    IOCLR1 = LCD_PORT;
+    IOSET1 = ch << LCD_SHIFT;
+    IOSET0 = RS;
+    IOCLR0 = RW;
+    LCD_strobe();
+}
+
+void LCD_cmd(unsigned char ch)
+{
+    IOCLR1 = LCD_PORT;
+    IOSET1 = ch << LCD_SHIFT;
+    IOCLR0 = RS;
+    IOCLR0 = RW;
+    LCD_strobe();
+}
+
+void LCD_init(void)
+{
+    PINSEL0 &= 0xFF0FFFFF;       // P0.10 and P0.11 as GPIO
+    PINSEL1 &= 0xFFFFFCFF;       // P0.20 as GPIO
+    PINSEL2 &= 0xFFFFFFF3;       // PORT1 as GPIO
+
+    IODIR0 |= RS | EN | RW;
+    IODIR1 |= LCD_PORT;
+
+    LCD_cmd(0x38);               // 8-bit, two lines
+    LCD_cmd(0x06);               // Entry mode
+    LCD_cmd(0x0C);               // Display ON, cursor OFF
+    LCD_cmd(0x01);               // Clear display
+    LCD_cmd(0x80);               // First line, first position
+}
+
+void LCD_display(int row, int pos, unsigned char *ch)
+{
+    unsigned char temp;
+
+    if (row == 1)
+        temp = 0x80 | (pos - 1);
+    else
+        temp = 0xC0 | (pos - 1);
+
+    LCD_cmd(temp);
+    while (*ch)
+        LCD_data(*ch++);
+}
+
+
+##############################################################################
+Practical_4_LPC2148_Keypad/LCD.h
+##############################################################################
+#ifndef LCD_H
+#define LCD_H
+
+void LCD_init(void);
+void LCD_data(unsigned char);
+void LCD_cmd(unsigned char);
+void LCD_display(int, int, unsigned char *);
+
+#endif
+
+
+##############################################################################
+Practical_4_LPC2148_Keypad/keypad.c
+##############################################################################
+#include <lpc214x.h>
+
+#define Col0 (1 << 12)
+#define Col1 (1 << 13)
+#define Col2 (1 << 14)
+#define Col3 (1 << 15)
+#define Row0 (1 << 16)
+#define Row1 (1 << 17)
+#define Row2 (1 << 18)
+#define Row3 (1 << 19)
+
+unsigned int ROW[] = {Row0, Row1, Row2, Row3};
+unsigned int COL[] = {Col0, Col1, Col2, Col3};
+unsigned int KeyCodes[] = {
+    '1', '4', '7', '*',
+    '2', '5', '8', '0',
+    '3', '6', '9', '#',
+    'A', 'B', 'C', 'D'
+};
+
+void kbddelay(unsigned int time)
+{
+    int i, j;
+    for (i = 0; i < time; i++)
+        for (j = 0; j < 100; j++);
+}
+
+void kbdInit(void)
+{
+    PINSEL0 &= 0x00FFFFFF;       // Set the pins function as GPIO
+    PINSEL1 &= 0xFFFFFF00;
+    IODIR0 &= ~0x000FF000;
+    IODIR0 |= 0x0000F000;        // Columns as outputs and rows as inputs
+    IOSET0 = 0x0000F000;
+}
+
+unsigned char GetKey(void)
+{
+    unsigned int col, rowdata, count = 0;
+    unsigned char key;
+
+    for (col = 0; col < 4; col++)
+    {
+        IOCLR0 = COL[col];       // Set the column line low
+        rowdata = IOPIN0;
+        kbddelay(100);
+        rowdata = IOPIN0;
+        rowdata >>= 16;
+
+        if ((rowdata & 0x0F) != 0x0F)
+        {
+            for (count = 0; count < 4; count++)
+            {
+                if ((rowdata & 0x01) == 0)
+                {
+                    key = KeyCodes[(col * 4) + count];
+                    IOSET0 = COL[col];  // Set the column line HIGH
+                    return key;
+                }
+                rowdata >>= 1;
+            }
+        }
+        IOSET0 = COL[col];       // Set the column line HIGH
+    }
+    return 0;
+}
+
+
+##############################################################################
+Practical_4_LPC2148_Keypad/keypad.h
+##############################################################################
+#ifndef KEYPAD_H
+#define KEYPAD_H
+
+void kbdInit(void);
+unsigned char GetKey(void);
+
+#endif
+
+
+##############################################################################
+Practical_4_LPC2148_Keypad/main.c
+##############################################################################
+#include "keypad.h"
+#include "LCD.h"
+
+int main(void)
+{
+    unsigned char temp;
+
+    kbdInit();
+    LCD_init();
+    LCD_display(1, 1, "Keypad");
+
+    while (1)
+    {
+        temp = GetKey();
+        if (temp != 0)
+        {
+            LCD_cmd(0xC0);
+            LCD_data(temp);
+        }
+    }
+}
+
+
+##############################################################################
+Practical_5_LPC2148_ADC/LCD.c
+##############################################################################
+#include <lpc214x.h>
+
+#define LCD_PORT 0x00FF0000
+#define EN (1 << 10)
+#define RS (1 << 11)
+#define RW (1 << 20)
+#define LCD_SHIFT 16
+
+void lcd_delay(unsigned int time)
+{
+    int i, j;
+    for (i = 0; i < time; i++)
+        for (j = 0; j < 200; j++);
+}
+
+void LCD_strobe(void)
+{
+    lcd_delay(100);
+    IOSET0 = EN;
+    lcd_delay(100);
+    IOCLR0 = EN;
+    lcd_delay(100);
+}
+
+void LCD_data(unsigned char ch)
+{
+    IOCLR1 = LCD_PORT;
+    IOSET1 = ch << LCD_SHIFT;
+    IOSET0 = RS;
+    IOCLR0 = RW;
+    LCD_strobe();
+}
+
+void LCD_cmd(unsigned char ch)
+{
+    IOCLR1 = LCD_PORT;
+    IOSET1 = ch << LCD_SHIFT;
+    IOCLR0 = RS;
+    IOCLR0 = RW;
+    LCD_strobe();
+}
+
+void LCD_init(void)
+{
+    PINSEL0 &= 0xFF0FFFFF;       // P0.10 and P0.11 as GPIO
+    PINSEL1 &= 0xFFFFFCFF;       // P0.20 as GPIO
+    PINSEL2 &= 0xFFFFFFF3;       // PORT1 as GPIO
+
+    IODIR0 = RS | EN | RW;
+    IODIR1 = LCD_PORT;
+
+    LCD_cmd(0x38);               // 8-bit, two lines
+    LCD_cmd(0x06);               // Entry mode
+    LCD_cmd(0x0C);               // Display ON, cursor OFF
+    LCD_cmd(0x01);               // Clear display
+    LCD_cmd(0x80);               // First line, first position
+}
+
+void LCD_display(int row, int pos, char *ch)
+{
+    unsigned char temp;
+
+    if (row == 1)
+        temp = 0x80 | (pos - 1);
+    else
+        temp = 0xC0 | (pos - 1);
+
+    LCD_cmd(temp);
+    while (*ch)
+        LCD_data(*ch++);
+}
+
+
+##############################################################################
+Practical_5_LPC2148_ADC/LCD.h
+##############################################################################
+#ifndef LCD_H
+#define LCD_H
+
+void LCD_init(void);
+void LCD_data(unsigned char);
+void LCD_cmd(unsigned char);
+void LCD_display(int, int, char *);
+
+#endif
+
+
+##############################################################################
+Practical_5_LPC2148_ADC/adc.c
+##############################################################################
+#include <lpc214x.h>
+
+void ADCInit(void)
+{
+    PINSEL1 &= 0xF0FFFFFF;       // Configure P0.28 and P0.29 as ADC pins
+    PINSEL1 |= 0x05000000;
+}
+
+unsigned int ADC_Read(unsigned char channel)
+{
+    static unsigned int ad1_data;
+
+    AD0CR = 0x00200300 | (1 << channel);  // Burst off, clock divider, channel, 10-bit ADC
+    AD0CR |= (1 << 24);                   // Start ADC
+
+    while (!(AD0GDR & 0x80000000));       // Wait for DONE bit
+
+    ad1_data = (AD0GDR & 0x0000FFC0) >> 6;
+    return ad1_data;
+}
+
+
+##############################################################################
+Practical_5_LPC2148_ADC/adc.h
+##############################################################################
+#ifndef ADC_H
+#define ADC_H
+
+void ADCInit(void);
+unsigned int ADC_Read(unsigned char channel);
+
+#endif
+
+
+##############################################################################
+Practical_5_LPC2148_ADC/main.c
+##############################################################################
+#include "adc.h"
+#include "LCD.h"
+#include <stdio.h>
+
+void delay(unsigned int time)
+{
+    unsigned int i, j;
+    for (i = 0; i < time; i++)
+        for (j = 0; j < 5000; j++);
+}
+
+int main(void)
+{
+    unsigned int temp;
+    char buf[16];
+
+    LCD_init();
+    ADCInit();
+
+    while (1)
+    {
+        temp = ADC_Read(1);                   // Read AN0.1 / AD0.1
+        sprintf(buf, "ADC result:0x%03X", temp);
+        LCD_display(1, 1, buf);
+        delay(20);
+    }
+}
+
+
+##############################################################################
+Practical_6_LPC2148_GPS/LCD.c
+##############################################################################
+#include <lpc214x.h>
+
+#define LCD_PORT 0x00FF0000
+#define EN (1 << 10)
+#define RS (1 << 11)
+#define RW (1 << 20)
+#define LCD_SHIFT 16
+
+void delay(unsigned int time)
+{
+    int i, j;
+    for (i = 0; i < time; i++)
+        for (j = 0; j < 200; j++);
+}
+
+void LCD_strobe(void)
+{
+    delay(100);
+    IOSET0 = EN;
+    delay(100);
+    IOCLR0 = EN;
+    delay(100);
+}
+
+void LCD_data(unsigned char ch)
+{
+    IOCLR1 = LCD_PORT;
+    IOSET1 = ch << LCD_SHIFT;
+    IOSET0 = RS;
+    IOCLR0 = RW;
+    LCD_strobe();
+}
+
+void LCD_cmd(unsigned char ch)
+{
+    IOCLR1 = LCD_PORT;
+    IOSET1 = ch << LCD_SHIFT;
+    IOCLR0 = RS;
+    IOCLR0 = RW;
+    LCD_strobe();
+}
+
+void LCD_init(void)
+{
+    PINSEL0 &= 0xFF0FFFFF;
+    PINSEL1 &= 0xFFFFFCFF;
+    PINSEL2 &= 0xFFFFFFF3;
+
+    IODIR0 |= RS | EN | RW;
+    IODIR1 |= LCD_PORT;
+
+    LCD_cmd(0x38);
+    LCD_cmd(0x06);
+    LCD_cmd(0x0C);
+    LCD_cmd(0x01);
+    LCD_cmd(0x80);
+}
+
+void LCD_display(int row, int pos, unsigned char *ch)
+{
+    unsigned char temp;
+    if (row == 1)
+        temp = 0x80 | (pos - 1);
+    else
+        temp = 0xC0 | (pos - 1);
+
+    LCD_cmd(temp);
+    while (*ch)
+        LCD_data(*ch++);
+}
+
+
+##############################################################################
+Practical_6_LPC2148_GPS/LCD.h
+##############################################################################
+#ifndef LCD_H
+#define LCD_H
+
+void delay(unsigned int time);
+void LCD_data(unsigned char);
+void LCD_cmd(unsigned char);
+void LCD_init(void);
+void LCD_display(int, int, unsigned char *);
+
+#endif
+
+
+##############################################################################
+Practical_6_LPC2148_GPS/UART.c
+##############################################################################
+#include <lpc214x.h>
+#include <stdio.h>
+
+void UartInit(unsigned int baudrate)
+{
+    int i, FDiv;
+    i = PINSEL0;
+    i = i & 0xFFF0FFF0;
+    PINSEL0 = (i | 0x50005);      // Configure TxD and RxD pins
+
+    U0LCR = 0x83;                 // DLAB=1, 8 data bits, 1 stop bit, no parity
+    FDiv = (15000000 / 16) / baudrate;
+    U0DLM = FDiv / 256;
+    U0DLL = FDiv % 256;
+    U0LCR = 0x03;                 // DLAB=0
+    U0TER = 0x80;
+}
+
+int UART_GetChar(void)
+{
+    while (!(U0LSR & 0x01));
+    return U0RBR;
+}
+
+int UART_PutChar(unsigned char ch)
+{
+    while (!(U0LSR & 0x20));
+    if (ch == '\n')
+        ch = 0x0D;
+    U0THR = ch;
+    return ch;
+}
+
+int fputc(int ch, FILE *f)
+{
+    return UART_PutChar(ch);
+}
+
+struct __FILE { int handle; };
+FILE __stdout;
+
+
+##############################################################################
+Practical_6_LPC2148_GPS/UART.h
+##############################################################################
+#ifndef UART_H
+#define UART_H
+
+void UartInit(unsigned int);
+int UART_GetChar(void);
+int UART_PutChar(unsigned char);
+
+#endif
+
+
+##############################################################################
+Practical_6_LPC2148_GPS/main.c
+##############################################################################
+#include <lpc214x.h>
+#include <stdio.h>
+#include "lcd.h"
+#include "UART.h"
+
+/* Fetch characters from UART until the '*' terminator is received. */
+void GPS_string(unsigned char *temp)
+{
+    unsigned int i = 0;
+    do
+    {
+        temp[i] = UART_GetChar();
+    }
+    while (temp[i++] != '*');
+
+    temp[i] = '\0';
+}
+
+/* Display latitude and longitude on the LCD. */
+void GPS_display(unsigned char *lat, unsigned char *lon)
+{
+    unsigned int i;
+
+    LCD_cmd(0x84);
+    for (i = 0; i < 2; i++)
+        LCD_data(*lat++);
+    LCD_data('\'');
+    LCD_data(*lat++);
+
+    LCD_cmd(0xC4);
+    for (i = 0; i < 3; i++)
+        LCD_data(*lon++);
+    LCD_data('\'');
+    for (i = 0; i < 8; i++)
+        LCD_data(*lon++);
+}
+
+int main(void)
+{
+    /* The supplied writeup declares temp[20]. See README for the buffer warning. */
+    unsigned char ch, temp[20], lat[10], lon[10];
+    unsigned int i = 0, j = 0;
+
+    LCD_init();
+    UartInit(9600);
+    LCD_display(1, 1, "GPS Program");
+    delay(200000);
+    LCD_cmd(0x01);
+    LCD_display(1, 1, "LAT:");
+    LCD_display(2, 1, "LON:");
+
+    while (1)
+    {
+        if ((ch = UART_GetChar()) == '$')
+        {
+            GPS_string(temp);
+
+            if (temp[2] == 'G' && temp[3] == 'G' && temp[4] == 'A')
+            {
+                i = 0;
+                j = 0;
+
+                while (temp[i++] != ',');  // Ignore $GPGGA identifier
+                while (temp[i++] != ',');  // Ignore time stamp
+
+                while (temp[i] != ',')     // Capture latitude
+                    lat[j++] = temp[i++];
+
+                while (temp[i++] != ',');  // Ignore N/S field
+                lat[j++] = temp[i++];      // Store N/S direction
+                lat[j] = '\0';
+
+                j = 0;
+                while (temp[i++] != ',');
+
+                while (temp[i] != ',')     // Capture longitude
+                    lon[j++] = temp[i++];
+
+                while (temp[i++] != ',');  // Ignore E/W field
+                lon[j++] = temp[i++];      // Store E/W direction
+                lon[j] = '\0';
+
+                GPS_display(lat, lon);
+            }
+        }
+    }
+
+    return 0;
+}
+
+
+##############################################################################
+Practical_7_LPC2148_RTC/LCD.c
+##############################################################################
+#include <lpc214x.h>
+#include "LCD.h"
+
+#define LCD_DATAMASK 0x000000FF
+#define LCD_PORT 0x000FF000
+#define LCD_SHIFT 12
+#define LCD_RS (1 << 20)
+#define LCD_EN (1 << 21)
+
+void LCD_delay(unsigned int time)
+{
+    unsigned int i, j;
+    for (i = 0; i < time; i++)
+        for (j = 0; j < 500; j++);
+}
+
+void SendInstruction(unsigned int command)
+{
+    command &= LCD_DATAMASK;
+    command = command << LCD_SHIFT;
+
+    IOCLR1 = LCD_RS;
+    LCD_delay(10);
+    IOSET1 = LCD_EN;
+    LCD_delay(10);
+    IOCLR0 = LCD_PORT;
+    IOSET0 = command;
+    LCD_delay(10);
+    IOCLR1 = LCD_EN;
+    LCD_delay(10);
+    IOCLR1 = LCD_RS;
+    IOCLR1 = LCD_DATAMASK << LCD_SHIFT;
+}
+
+void SendData(unsigned int lcddata)
+{
+    lcddata &= LCD_DATAMASK;
+    lcddata = lcddata << LCD_SHIFT;
+
+    IOSET1 = LCD_RS;
+    LCD_delay(10);
+    IOSET1 = LCD_EN;
+    LCD_delay(10);
+    IOCLR0 = LCD_PORT;
+    IOSET0 = lcddata;
+    LCD_delay(10);
+    IOCLR1 = LCD_EN;
+    LCD_delay(10);
+    IOCLR1 = LCD_RS;
+    IOCLR1 = LCD_DATAMASK << LCD_SHIFT;
+}
+
+void SetLineNumber(unsigned int linenum)
+{
+    if (linenum == 1)
+        SendInstruction(SETDDRAMADDR | 0x00);
+    else
+        SendInstruction(SETDDRAMADDR | 0x40);
+}
+
+void SetAddress(unsigned char memory, unsigned int address)
+{
+    address &= 0x0000007F;
+    if (memory == DDRAM)
+        SendInstruction(SETDDRAMADDR | address);
+    else
+        SendInstruction(SETCGRAMADDR | address);
+}
+
+void BlinkDisplay(void)
+{
+    SendInstruction(DISPONOFFCTRL);
+    LCD_delay(500);
+    SendInstruction(DISPONOFFCTRL | DISPLAY_ON | CURSOR_ON | BLINKCHAR_ON);
+    LCD_delay(500);
+}
+
+void ShiftDisplay(unsigned char direction, unsigned int clicks)
+{
+    unsigned int i;
+    if (direction == RIGHTSHIFT)
+    {
+        for (i = 0; i < clicks; i++)
+            SendInstruction(DISPCURSHIFT | SHIFTRIGHT);
+    }
+    else
+    {
+        for (i = 0; i < clicks; i++)
+            SendInstruction(DISPCURSHIFT);
+    }
+}
+
+void ClearDisplay(void)
+{
+    SendInstruction(CLEARDISPLAY);
+}
+
+void InitLCD(void)
+{
+    unsigned int temp;
+    temp = PINSEL2;
+    temp &= 0xFFFFFFF7;
+    PINSEL2 = 0;
+    IODIR1 = LCD_RS | LCD_EN;
+    IODIR0 = 0x000FF000;
+
+    SendInstruction(FUNCTIONSET | FS_DATALENGTH);
+    LCD_delay(5);
+    SendInstruction(FUNCTIONSET | FS_DATALENGTH);
+    LCD_delay(1);
+    SendInstruction(FUNCTIONSET | FS_DATALENGTH | FS_LINES2);
+    SendInstruction(DISPONOFFCTRL);
+    SendInstruction(CLEARDISPLAY);
+    SendInstruction(ENTRYMODESET | ENTRYMODESET_INC);
+    SendInstruction(DISPONOFFCTRL | DISPLAY_ON | CURSOR_ON);
+}
+
+
+##############################################################################
+Practical_7_LPC2148_RTC/LCD.h
+##############################################################################
+#ifndef LCD_H
+#define LCD_H
+
+// Commands for 16x2 character LCD
+#define CLEARDISPLAY       0x01
+#define RETURNHOME         0x02
+#define ENTRYMODESET       0x04
+#define DISPONOFFCTRL      0x08
+#define DISPCURSHIFT       0x10
+#define FUNCTIONSET        0x20
+#define SETCGRAMADDR       0x40
+#define SETDDRAMADDR       0x80
+#define ENTRYMODESET_INC   0x02
+#define ENTRYMODESET_DEC   0x04
+#define ENTRYMODESET_SHIFT 0x01
+#define DISPLAY_ON         0x04
+#define CURSOR_ON          0x02
+#define BLINKCHAR_ON       0x01
+#define SHIFTCURSOR        0x08
+#define SHIFTRIGHT         0x04
+#define FS_DATALENGTH      0x10
+#define FS_LINES2          0x08
+#define FS_FONT            0x04
+#define DDRAM              1
+#define CGRAM              0
+#define RIGHTSHIFT         1
+#define LEFTSHIFT          0
+
+void SendInstruction(unsigned int);
+void SendData(unsigned int);
+void InitLCD(void);
+void SetLineNumber(unsigned int);
+void SetAddress(unsigned char, unsigned int);
+void BlinkDisplay(void);
+void ShiftDisplay(unsigned char, unsigned int);
+void RollDisplay(void);
+void ClearDisplay(void);
+
+#endif
+
+
+##############################################################################
+Practical_7_LPC2148_RTC/UART.c
+##############################################################################
+#include <lpc214x.h>
+#include <stdio.h>
+
+void UartInit(unsigned int baudrate)
+{
+    int i, FDiv;
+    i = PINSEL0;
+    i = i & 0xFFFFFFF0;
+    PINSEL0 = (i | 0x05);
+
+    U0LCR = 0x83;
+    FDiv = (15000000 / 16) / baudrate;
+    U0DLM = FDiv / 256;
+    U0DLL = FDiv % 256;
+    U0LCR = 0x03;
+    U0TER = 0x80;
+}
+
+int UART_GetChar(void)
+{
+    while (!(U0LSR & 0x01));
+    return U0RBR;
+}
+
+int UART_PutChar(unsigned char Ch)
+{
+    if (Ch == '\n')
+    {
+        while (!(U0LSR & 0x20));
+        U0THR = 0x0D;
+    }
+    while (!(U0LSR & 0x20));
+    return (U0THR = Ch);
+}
+
+int fputc(int ch, FILE *f)
+{
+    return UART_PutChar(ch);
+}
+
+struct __FILE { int handle; };
+FILE __stdout;
+
+
+##############################################################################
+Practical_7_LPC2148_RTC/main.c
+##############################################################################
+#include <lpc214x.h>
+#include <stdio.h>
+
+#define RTConPrescaler 1   // 1: use PCLK prescaler; 0: use external oscillator
+extern void UartInit(unsigned int);
+
+void delay(unsigned int time)
+{
+    unsigned int i, j;
+    for (i = 0; i < time; i++)
+        for (j = 0; j < 5000; j++);
+}
+
+void RTCInit(void)
+{
+    CIIR = 0x00;            // No interrupt generated
+#ifdef RTConPrescaler
+    PREINT = 0x16D;         // Assuming 15 MHz PCLK
+    PREFRAC = 0x1B00;       // Assuming 15 MHz PCLK
+    CCR = 0x02;
+#else
+    CCR = 0x02;
+#endif
+}
+
+void SetTime(int hours, int mins, int sec)
+{
+    SEC = sec;
+    MIN = mins;
+    HOUR = hours;
+    CCR = 0x01;             // Start the clock
+}
+
+int main(void)
+{
+    UartInit(9600);
+    RTCInit();
+    SetTime(5, 30, 1);
+
+    while (1)
+    {
+        printf("\nThe Time is ");
+        printf(":%02d", HOUR);
+        printf(":%02d", MIN);
+        printf(":%02d", SEC);
+        delay(500);
+    }
+
+    return 0;
+}
+
+
+##############################################################################
+Practical_8_LPC2148_EEPROM_I2C/EEPROM.c
+##############################################################################
+#include "I2C.h"
+
+#define EEPROM_Addr 0xA0
+
+void EEPROM_write(unsigned int add, unsigned char *data, unsigned char len)
+{
+    unsigned char i;
+
+    I2CStart();
+    I2Csend(EEPROM_Addr | I2Cwrite);
+    I2Csend(add >> 8);
+    I2Csend(add & 0xFF);
+
+    for (i = 0; i < len; i++)
+        I2Csend(*data++);
+
+    I2CStop();
+}
+
+void EEPROM_read(unsigned int add, unsigned char *data, unsigned char len)
+{
+    unsigned char i;
+
+    I2CStart();
+    I2Csend(EEPROM_Addr | I2Cwrite);
+    I2Csend(add >> 8);
+    I2Csend(add & 0xFF);
+    I2CStart();
+    I2Csend(EEPROM_Addr | I2Cread);
+
+    for (i = 0; i < len; i++)
+        *data++ = I2Cget();
+
+    I2CStop();
+}
+
+
+##############################################################################
+Practical_8_LPC2148_EEPROM_I2C/EEPROM.h
+##############################################################################
+#ifndef EEPROM_H
+#define EEPROM_H
+
+void EEPROM_write(unsigned int, unsigned char *, unsigned char);
+void EEPROM_read(unsigned int, unsigned char *, unsigned char);
+
+#endif
+
+
+##############################################################################
+Practical_8_LPC2148_EEPROM_I2C/I2C.c
+##############################################################################
+#include <lpc214x.h>
+
+#define I2C_ENABLE (1 << 6)
+#define I2C_START  (1 << 5)
+#define I2C_STOP   (1 << 4)
+#define I2C_SI     (1 << 3)
+#define I2C_AACK   (1 << 2)
+
+void I2CInit(void)
+{
+    PINSEL0 &= 0xFFFFFF0F;
+    PINSEL0 |= 0x00000050;     // P0.2 = SCL0, P0.3 = SDA0
+
+    I2C0CONCLR = I2C_ENABLE | I2C_START | I2C_STOP | I2C_SI | I2C_AACK;
+    I2C0SCLH = 0x4B;
+    I2C0SCLL = 0x4B;
+    I2C0CONSET = I2C_ENABLE;
+}
+
+void I2CStart(void)
+{
+    unsigned int status;
+
+    I2C0CONCLR = I2C_START | I2C_STOP | I2C_SI | I2C_AACK;
+    I2C0CONSET = I2C_ENABLE;
+    I2C0CONSET = I2C_START;
+    while (!((status = I2C0CONSET) & I2C_SI));
+}
+
+void I2CStop(void)
+{
+    I2C0CONCLR = I2C_START | I2C_SI | I2C_AACK;
+    I2C0CONSET = I2C_STOP;
+}
+
+void I2Csend(unsigned char data)
+{
+    unsigned int status;
+    I2C0DAT = data;
+    I2C0CONCLR = I2C_START | I2C_STOP;
+    I2C0CONCLR = I2C_SI;
+    while (!((status = I2C0CONSET) & I2C_SI));
+}
+
+unsigned char I2Cget(void)
+{
+    unsigned char data;
+    unsigned int status;
+
+    I2C0CONCLR = I2C_START | I2C_STOP;
+    I2C0CONCLR = I2C_SI;
+    I2C0CONSET = I2C_AACK;
+    while (!((status = I2C0CONSET) & I2C_SI));
+    data = I2C0DAT;
+    return data;
+}
+
+
+##############################################################################
+Practical_8_LPC2148_EEPROM_I2C/I2C.h
+##############################################################################
+#ifndef I2C_H
+#define I2C_H
+
+#define I2Cwrite 0x00
+#define I2Cread  0x01
+
+void I2CInit(void);
+void I2CStart(void);
+void I2CStop(void);
+void I2Csend(unsigned char);
+unsigned char I2Cget(void);
+
+#endif
+
+
+##############################################################################
+Practical_8_LPC2148_EEPROM_I2C/UART.c
+##############################################################################
+#include <stdio.h>
+#include <lpc214x.h>
+#include "UART.h"
+
+void UartInit(unsigned int baudrate)
+{
+    unsigned int FDiv;
+    PINSEL0 &= 0xFFFFFFF0;
+    PINSEL0 |= 0x00000005;
+
+    U0LCR = 0x83;
+    U0FDR = 0x10;
+    FDiv = (15000000 / 16) / baudrate;
+    U0DLM = FDiv / 256;
+    U0DLL = FDiv % 256;
+    U0LCR = 0x03;
+    U0TER = 0x80;
+}
+
+int UART_GetChar(void)
+{
+    while (!(U0LSR & 0x01));
+    return U0RBR;
+}
+
+int UART_PutChar(unsigned char Ch)
+{
+    if (Ch == '\n')
+    {
+        while (!(U0LSR & 0x20));
+        U0THR = 0x0D;
+    }
+    while (!(U0LSR & 0x20));
+    return (U0THR = Ch);
+}
+
+int fputc(int ch, FILE *f)
+{
+    return UART_PutChar(ch);
+}
+
+struct __FILE { int handle; };
+FILE __stdout;
+
+
+##############################################################################
+Practical_8_LPC2148_EEPROM_I2C/UART.h
+##############################################################################
+#ifndef UART_H
+#define UART_H
+
+void UartInit(unsigned int);
+int UART_GetChar(void);
+int UART_PutChar(unsigned char);
+
+#endif
+
+
+##############################################################################
+Practical_8_LPC2148_EEPROM_I2C/main.c
+##############################################################################
+#include <lpc214x.h>
+#include "UART.h"
+#include "I2C.h"
+#include "EEPROM.h"
+#include <stdio.h>
+
+unsigned char write_array[10] = {
+    0x11, 0x12, 0x13, 0x14, 0x15,
+    0x16, 0x17, 0x18, 0x19, 0xC5
+};
+unsigned char read_array[10];
+
+int main(void)
+{
+    unsigned int i;
+
+    PINSEL2 = 0;             // LED init
+    IODIR1 = 0xFF000000;
+    IOCLR1 = 0xFF << 24;
+
+    UartInit(9600);
+    printf("I2C EEPROM\r\n");
+    I2CInit();
+
+    printf("Writing Data.....\r\n");
+    EEPROM_write(0x1349, write_array, 10);
+
+    printf("Reading Data.....\r\n");
+    EEPROM_read(0x1349, read_array, 10);
+
+    for (i = 0; i < 10; i++)
+    {
+        printf("write_array[%d] = 0x%02X\tread_array[%d] = 0x%02X\r\n",
+               i, write_array[i], i, read_array[i]);
+    }
+
+    IOSET1 = read_array[9] << 24;
+    while (1);              // Stop here forever
+}

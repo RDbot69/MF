@@ -1,0 +1,882 @@
+PCC-304-ETC: MICROCONTROLLER AND VLSI DESIGN LAB
+VERILOG CODES + TESTBENCHES (A.Y. 2026-27)
+
+Prepared from the uploaded practical sheets/write-ups. Where the uploaded sheet contained only the question and no code, a standard working implementation is supplied. The reset convention and missing-code notes are listed at the end.
+
+HOW TO USE IN VIVADO
+1. Add the design module as a Design Source (.v).
+2. Add its testbench as a Simulation Source (.v).
+3. Set the testbench module as the simulation top and run Behavioral Simulation.
+4. Do not set a testbench as the synthesis top. For FPGA implementation, use only the design module and create the appropriate XDC constraints.
+5. Keep modules with duplicate names in separate Vivado projects, or rename them before combining files.
+
+============================================================
+EXPERIMENT 1: 4:1 MULTIPLEXER
+============================================================
+
+DESIGN CODE (mux4to1.v)
+
+module mux4to1 (
+    input  wire [3:0] I,
+    input  wire [1:0] S,
+    output reg        Y
+);
+    always @(*) begin
+        case (S)
+            2'b00: Y = I[0];
+            2'b01: Y = I[1];
+            2'b10: Y = I[2];
+            2'b11: Y = I[3];
+            default: Y = 1'b0;
+        endcase
+    end
+endmodule
+
+TESTBENCH CODE (tb_mux4to1.v)
+
+`timescale 1ns / 1ps
+module tb_mux4to1;
+    reg  [3:0] I;
+    reg  [1:0] S;
+    wire Y;
+    integer i;
+
+    mux4to1 DUT (.I(I), .S(S), .Y(Y));
+
+    initial begin
+        $monitor("time=%0t I=%b S=%b Y=%b", $time, I, S, Y);
+        I = 4'b1010;
+        for (i = 0; i < 4; i = i + 1) begin
+            S = i;
+            #10;
+        end
+        I = 4'b0101;
+        for (i = 0; i < 4; i = i + 1) begin
+            S = i;
+            #10;
+        end
+        $finish;
+    end
+endmodule
+
+------------------------------------------------------------
+EXPERIMENT 1 - ADDITIONAL QUESTION: 8:1 MUX USING 2:1 AND 4:1 MUXES
+------------------------------------------------------------
+
+DESIGN CODE (mux8to1_structural.v)
+
+module mux2to1 (
+    input  wire I0,
+    input  wire I1,
+    input  wire S,
+    output wire Y
+);
+    assign Y = S ? I1 : I0;
+endmodule
+
+module mux4to1_structural (
+    input  wire [3:0] I,
+    input  wire [1:0] S,
+    output wire Y
+);
+    wire y0, y1;
+
+    mux2to1 M0 (.I0(I[0]), .I1(I[1]), .S(S[0]), .Y(y0));
+    mux2to1 M1 (.I0(I[2]), .I1(I[3]), .S(S[0]), .Y(y1));
+    mux2to1 M2 (.I0(y0),   .I1(y1),   .S(S[1]), .Y(Y));
+endmodule
+
+module mux8to1_structural (
+    input  wire [7:0] I,
+    input  wire [2:0] S,
+    output wire Y
+);
+    wire y_low, y_high;
+
+    mux4to1_structural M0 (
+        .I(I[3:0]), .S(S[1:0]), .Y(y_low)
+    );
+    mux4to1_structural M1 (
+        .I(I[7:4]), .S(S[1:0]), .Y(y_high)
+    );
+    mux2to1 M2 (
+        .I0(y_low), .I1(y_high), .S(S[2]), .Y(Y)
+    );
+endmodule
+
+TESTBENCH CODE (tb_mux8to1_structural.v)
+
+`timescale 1ns / 1ps
+module tb_mux8to1_structural;
+    reg  [7:0] I;
+    reg  [2:0] S;
+    wire Y;
+    integer i;
+
+    mux8to1_structural DUT (.I(I), .S(S), .Y(Y));
+
+    initial begin
+        $monitor("time=%0t I=%b S=%b Y=%b", $time, I, S, Y);
+        I = 8'b1011_0101;
+        for (i = 0; i < 8; i = i + 1) begin
+            S = i;
+            #10;
+        end
+        $finish;
+    end
+endmodule
+
+============================================================
+EXPERIMENT 2: FULL ADDER USING TWO HALF ADDERS
+============================================================
+
+DESIGN CODE (full_adder.v)
+
+module half_adder (
+    input  wire a,
+    input  wire b,
+    output wire sum,
+    output wire carry
+);
+    assign sum   = a ^ b;
+    assign carry = a & b;
+endmodule
+
+module full_adder (
+    input  wire a,
+    input  wire b,
+    input  wire cin,
+    output wire sum,
+    output wire cout
+);
+    wire sum1, carry1, carry2;
+
+    half_adder HA1 (
+        .a(a), .b(b), .sum(sum1), .carry(carry1)
+    );
+    half_adder HA2 (
+        .a(sum1), .b(cin), .sum(sum), .carry(carry2)
+    );
+
+    assign cout = carry1 | carry2;
+endmodule
+
+TESTBENCH CODE (tb_full_adder.v)
+
+`timescale 1ns / 1ps
+module tb_full_adder;
+    reg a, b, cin;
+    wire sum, cout;
+    integer i;
+
+    full_adder DUT (
+        .a(a), .b(b), .cin(cin), .sum(sum), .cout(cout)
+    );
+
+    initial begin
+        $monitor("time=%0t a=%b b=%b cin=%b sum=%b cout=%b",
+                 $time, a, b, cin, sum, cout);
+        for (i = 0; i < 8; i = i + 1) begin
+            {a, b, cin} = i;
+            #10;
+        end
+        $finish;
+    end
+endmodule
+
+============================================================
+EXPERIMENT 3: 4-BIT ALU WITHOUT CARRY
+============================================================
+
+This version follows the uploaded ALU-without-carry write-up: the result is four bits, so an addition overflow is discarded.
+
+DESIGN CODE (alu_without_carry.v)
+
+module ALU_4bit (
+    input  wire [3:0] A,
+    input  wire [3:0] B,
+    input  wire [2:0] sel,
+    output reg  [3:0] Y
+);
+    always @(*) begin
+        if      (sel == 3'b000) Y = A + B;       // Addition
+        else if (sel == 3'b001) Y = A - B;       // Subtraction
+        else if (sel == 3'b010) Y = A & B;       // AND
+        else if (sel == 3'b011) Y = A | B;       // OR
+        else if (sel == 3'b100) Y = A ^ B;       // XOR
+        else if (sel == 3'b101) Y = ~A;          // NOT A
+        else if (sel == 3'b110) Y = A << 1;      // Left shift
+        else if (sel == 3'b111) Y = A >> 1;      // Right shift
+        else                   Y = 4'b0000;
+    end
+endmodule
+
+TESTBENCH CODE (tb_alu_without_carry.v)
+
+`timescale 1ns / 1ps
+module tb_alu_without_carry;
+    reg  [3:0] A, B;
+    reg  [2:0] sel;
+    wire [3:0] Y;
+    integer i;
+
+    ALU_4bit DUT (.A(A), .B(B), .sel(sel), .Y(Y));
+
+    initial begin
+        $monitor("time=%0t A=%b B=%b sel=%b Y=%b", $time, A, B, sel, Y);
+        A = 4'b0101;
+        B = 4'b0011;
+        for (i = 0; i < 8; i = i + 1) begin
+            sel = i;
+            #10;
+        end
+        $finish;
+    end
+endmodule
+
+============================================================
+EXPERIMENT 3: 4-BIT ALU WITH CARRY / BORROW
+============================================================
+
+This version includes carry-out for addition and a borrow indication for subtraction. For subtraction, carry=1 means A is smaller than B (unsigned borrow occurs). Shift operations implement multiplication/division by 2 for unsigned values, with truncation to four bits.
+
+DESIGN CODE (alu_with_carry_borrow.v)
+
+module alu_4bit_carry (
+    input  wire [3:0] A,
+    input  wire [3:0] B,
+    input  wire [2:0] sel,
+    output reg  [3:0] Y,
+    output reg        carry
+);
+    reg [4:0] temp;
+
+    always @(*) begin
+        Y     = 4'b0000;
+        carry = 1'b0;
+        temp  = 5'b00000;
+
+        case (sel)
+            3'b000: begin                    // Addition with carry
+                temp  = {1'b0, A} + {1'b0, B};
+                Y     = temp[3:0];
+                carry = temp[4];
+            end
+            3'b001: begin                    // Subtraction with borrow
+                Y     = A - B;
+                carry = (A < B);             // 1 when borrow occurs
+            end
+            3'b010: Y = A & B;               // AND
+            3'b011: Y = A | B;               // OR
+            3'b100: Y = A ^ B;               // XOR
+            3'b101: Y = ~A;                  // NOT A
+            3'b110: Y = A << 1;              // Multiply by 2 (4-bit result)
+            3'b111: Y = A >> 1;              // Divide by 2 (unsigned)
+            default: begin
+                Y = 4'b0000;
+                carry = 1'b0;
+            end
+        endcase
+    end
+endmodule
+
+TESTBENCH CODE (tb_alu_with_carry_borrow.v)
+
+`timescale 1ns / 1ps
+module tb_alu_with_carry_borrow;
+    reg  [3:0] A, B;
+    reg  [2:0] sel;
+    wire [3:0] Y;
+    wire carry;
+    integer i;
+
+    alu_4bit_carry DUT (
+        .A(A), .B(B), .sel(sel), .Y(Y), .carry(carry)
+    );
+
+    initial begin
+        $monitor("time=%0t A=%b B=%b sel=%b Y=%b carry_or_borrow=%b",
+                 $time, A, B, sel, Y, carry);
+
+        // Addition overflow: 15 + 1 = 16
+        A = 4'b1111; B = 4'b0001; sel = 3'b000; #10;
+
+        // Subtraction borrow: 2 - 4
+        A = 4'b0010; B = 4'b0100; sel = 3'b001; #10;
+
+        // Test the remaining ALU operations
+        A = 4'b0101; B = 4'b0011;
+        for (i = 2; i < 8; i = i + 1) begin
+            sel = i;
+            #10;
+        end
+        $finish;
+    end
+endmodule
+
+============================================================
+EXPERIMENT 4: 4-BIT BINARY TO GRAY CODE CONVERTER
+============================================================
+
+DESIGN CODE (binary_to_gray.v)
+
+module binary_to_gray (
+    input  wire [3:0] binary,
+    output wire [3:0] gray
+);
+    assign gray[3] = binary[3];
+    assign gray[2] = binary[3] ^ binary[2];
+    assign gray[1] = binary[2] ^ binary[1];
+    assign gray[0] = binary[1] ^ binary[0];
+endmodule
+
+TESTBENCH CODE (tb_binary_to_gray.v)
+
+`timescale 1ns / 1ps
+module tb_binary_to_gray;
+    reg  [3:0] binary;
+    wire [3:0] gray;
+    integer i;
+
+    binary_to_gray DUT (.binary(binary), .gray(gray));
+
+    initial begin
+        $monitor("time=%0t binary=%b gray=%b", $time, binary, gray);
+        for (i = 0; i < 16; i = i + 1) begin
+            binary = i;
+            #10;
+        end
+        $finish;
+    end
+endmodule
+
+------------------------------------------------------------
+EXPERIMENT 4 - ADDITIONAL QUESTION: BCD TO COMMON-ANODE 7-SEGMENT DECODER
+------------------------------------------------------------
+
+Segment order in this code is {a,b,c,d,e,f,g}. Common-anode outputs are active-low: 0 turns a segment ON and 1 turns it OFF. The patterns below match the uploaded write-up.
+
+DESIGN CODE (bcd_to_7segment.v)
+
+module bcd_to_7segment (
+    input  wire [3:0] bcd,
+    output reg  [6:0] seg
+);
+    always @(*) begin
+        case (bcd)
+            4'b0000: seg = 7'b0000001; // 0
+            4'b0001: seg = 7'b1001111; // 1
+            4'b0010: seg = 7'b0010010; // 2
+            4'b0011: seg = 7'b0000110; // 3
+            4'b0100: seg = 7'b1001100; // 4
+            4'b0101: seg = 7'b0100100; // 5
+            4'b0110: seg = 7'b0100000; // 6
+            4'b0111: seg = 7'b0001111; // 7
+            4'b1000: seg = 7'b0000000; // 8
+            4'b1001: seg = 7'b0000100; // 9
+            default: seg = 7'b1111111; // Blank
+        endcase
+    end
+endmodule
+
+TESTBENCH CODE (tb_bcd_to_7segment.v)
+
+`timescale 1ns / 1ps
+module tb_bcd_to_7segment;
+    reg  [3:0] bcd;
+    wire [6:0] seg;
+    integer i;
+
+    bcd_to_7segment DUT (.bcd(bcd), .seg(seg));
+
+    initial begin
+        $monitor("time=%0t bcd=%d seg=%b", $time, bcd, seg);
+        for (i = 0; i <= 9; i = i + 1) begin
+            bcd = i;
+            #10;
+        end
+        $finish;
+    end
+endmodule
+
+============================================================
+EXPERIMENT 5: JK AND T FLIP-FLOPS
+============================================================
+
+Both designs below use an asynchronous active-low reset named rst_n. Keep rst_n=0 during reset and set rst_n=1 to release reset.
+
+DESIGN CODE (jk_and_t_flipflops.v)
+
+module jk_flip_flop (
+    input  wire clk,
+    input  wire rst_n,
+    input  wire j,
+    input  wire k,
+    output reg  q,
+    output wire q_bar
+);
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n)
+            q <= 1'b0;
+        else begin
+            case ({j, k})
+                2'b00: q <= q;       // Hold
+                2'b01: q <= 1'b0;    // Reset
+                2'b10: q <= 1'b1;    // Set
+                2'b11: q <= ~q;      // Toggle
+            endcase
+        end
+    end
+    assign q_bar = ~q;
+endmodule
+
+module t_flip_flop (
+    input  wire clk,
+    input  wire rst_n,
+    input  wire t,
+    output reg  q,
+    output wire q_bar
+);
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n)
+            q <= 1'b0;
+        else if (t)
+            q <= ~q;
+        else
+            q <= q;
+    end
+    assign q_bar = ~q;
+endmodule
+
+TESTBENCH CODE (tb_jk_and_t_flipflops.v)
+
+`timescale 1ns / 1ps
+module tb_jk_and_t_flipflops;
+    reg clk, rst_n;
+    reg j, k, t;
+    wire q_jk, qbar_jk;
+    wire q_t, qbar_t;
+
+    jk_flip_flop U1 (
+        .clk(clk), .rst_n(rst_n), .j(j), .k(k),
+        .q(q_jk), .q_bar(qbar_jk)
+    );
+    t_flip_flop U2 (
+        .clk(clk), .rst_n(rst_n), .t(t),
+        .q(q_t), .q_bar(qbar_t)
+    );
+
+    always #5 clk = ~clk;
+
+    initial begin
+        $monitor("time=%0t rst_n=%b J=%b K=%b Q_JK=%b T=%b Q_T=%b",
+                 $time, rst_n, j, k, q_jk, t, q_t);
+        clk = 0; rst_n = 0; j = 0; k = 0; t = 0;
+        #12 rst_n = 1;
+
+        @(negedge clk) begin j = 0; k = 0; t = 0; end // Hold
+        @(negedge clk) begin j = 1; k = 0; t = 1; end // JK set, T toggle
+        @(negedge clk) begin j = 0; k = 1; t = 1; end // JK reset, T toggle
+        @(negedge clk) begin j = 1; k = 1; t = 0; end // JK toggle, T hold
+        @(negedge clk) begin j = 0; k = 0; t = 1; end // JK hold, T toggle
+        repeat (2) @(negedge clk);
+        $finish;
+    end
+endmodule
+
+============================================================
+EXPERIMENT 6: 3-BIT SYNCHRONOUS UP-DOWN COUNTER
+============================================================
+
+up_down=1 counts upward; up_down=0 counts downward. The 3-bit output naturally wraps from 7 to 0 and from 0 to 7.
+
+DESIGN CODE (sync_up_down_counter.v)
+
+module sync_up_down_counter (
+    input  wire       clk,
+    input  wire       rst,
+    input  wire       up_down,
+    output reg  [2:0] count
+);
+    always @(posedge clk or posedge rst) begin
+        if (rst)
+            count <= 3'b000;
+        else if (up_down)
+            count <= count + 1'b1;
+        else
+            count <= count - 1'b1;
+    end
+endmodule
+
+TESTBENCH CODE (tb_sync_up_down_counter.v)
+
+`timescale 1ns / 1ps
+module tb_sync_up_down_counter;
+    reg clk, rst, up_down;
+    wire [2:0] count;
+
+    sync_up_down_counter DUT (
+        .clk(clk), .rst(rst), .up_down(up_down), .count(count)
+    );
+
+    always #5 clk = ~clk;
+
+    initial begin
+        $monitor("time=%0t rst=%b up_down=%b count=%b (%0d)",
+                 $time, rst, up_down, count, count);
+        clk = 0; rst = 1; up_down = 1;
+        #12 rst = 0;
+        repeat (10) @(negedge clk);  // Count up through wraparound
+        up_down = 0;
+        repeat (10) @(negedge clk);  // Count down through wraparound
+        $finish;
+    end
+endmodule
+
+------------------------------------------------------------
+EXPERIMENT 6 - ADDITIONAL QUESTION: MOD-8 AND 4-BIT BINARY COUNTERS
+------------------------------------------------------------
+
+A Mod-8 counter has 8 states (0 to 7) and therefore needs 3 bits. A 4-bit binary counter has 16 states (0 to 15).
+
+DESIGN CODE (mod8_and_4bit_counters.v)
+
+module mod8_counter (
+    input  wire       clk,
+    input  wire       rst,
+    output reg  [2:0] count
+);
+    always @(posedge clk or posedge rst) begin
+        if (rst)
+            count <= 3'b000;
+        else
+            count <= count + 1'b1;
+    end
+endmodule
+
+module binary4_counter (
+    input  wire       clk,
+    input  wire       rst,
+    output reg  [3:0] count
+);
+    always @(posedge clk or posedge rst) begin
+        if (rst)
+            count <= 4'b0000;
+        else
+            count <= count + 1'b1;
+    end
+endmodule
+
+TESTBENCH CODE (tb_mod8_and_4bit_counters.v)
+
+`timescale 1ns / 1ps
+module tb_mod8_and_4bit_counters;
+    reg clk, rst;
+    wire [2:0] count_mod8;
+    wire [3:0] count_4bit;
+
+    mod8_counter U1 (.clk(clk), .rst(rst), .count(count_mod8));
+    binary4_counter U2 (.clk(clk), .rst(rst), .count(count_4bit));
+
+    always #5 clk = ~clk;
+
+    initial begin
+        $monitor("time=%0t mod8=%b (%0d) binary4=%b (%0d)",
+                 $time, count_mod8, count_mod8, count_4bit, count_4bit);
+        clk = 0; rst = 1;
+        #12 rst = 0;
+        repeat (20) @(negedge clk);
+        $finish;
+    end
+endmodule
+
+============================================================
+EXPERIMENT 7 (THE UPLOADED SISO WRITE-UP LABELS THIS EXPERIMENT 6): 4-BIT SISO SHIFT REGISTER
+============================================================
+
+DESIGN CODE (siso_4bit.v)
+
+module siso_4bit (
+    input  wire clk,
+    input  wire rst,
+    input  wire serial_in,
+    output wire serial_out
+);
+    reg [3:0] shift_reg;
+
+    always @(posedge clk or posedge rst) begin
+        if (rst)
+            shift_reg <= 4'b0000;
+        else
+            shift_reg <= {shift_reg[2:0], serial_in};
+    end
+
+    assign serial_out = shift_reg[3];
+endmodule
+
+TESTBENCH CODE (tb_siso_4bit.v)
+
+`timescale 1ns / 1ps
+module tb_siso_4bit;
+    reg clk, rst, serial_in;
+    wire serial_out;
+
+    siso_4bit DUT (
+        .clk(clk), .rst(rst), .serial_in(serial_in), .serial_out(serial_out)
+    );
+
+    always #5 clk = ~clk;
+
+    initial begin
+        $monitor("time=%0t clk=%b rst=%b serial_in=%b shift_reg=%b serial_out=%b",
+                 $time, clk, rst, serial_in, DUT.shift_reg, serial_out);
+        clk = 0; rst = 1; serial_in = 0;
+        #12 rst = 0;
+        @(negedge clk) serial_in = 1;
+        @(negedge clk) serial_in = 0;
+        @(negedge clk) serial_in = 1;
+        @(negedge clk) serial_in = 1;
+        repeat (4) @(negedge clk); // Shift zeros through and observe serial output
+        $finish;
+    end
+endmodule
+
+------------------------------------------------------------
+EXPERIMENT 7 - ADDITIONAL QUESTION: 4-BIT SIPO AND PISO SHIFT REGISTER
+------------------------------------------------------------
+
+mode=0 selects SIPO; mode=1 selects PISO. In PISO mode the serial output is the least-significant bit, so the parallel word is shifted out LSB-first.
+
+DESIGN CODE (sipo_piso_4bit.v)
+
+module sipo_reg (
+    input  wire       clk,
+    input  wire       rst,
+    input  wire       mode,          // 0 = SIPO, 1 = PISO
+    input  wire       load,          // Parallel load in PISO mode
+    input  wire       serial_in,
+    input  wire [3:0] parallel_in,
+    output reg  [3:0] parallel_out,
+    output wire       serial_out
+);
+    reg [3:0] shift_reg;
+
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            shift_reg    <= 4'b0000;
+            parallel_out <= 4'b0000;
+        end
+        else if (mode == 1'b0) begin
+            shift_reg    <= {shift_reg[2:0], serial_in};
+            parallel_out <= {shift_reg[2:0], serial_in};
+        end
+        else begin
+            if (load)
+                shift_reg <= parallel_in;
+            else
+                shift_reg <= {1'b0, shift_reg[3:1]};
+        end
+    end
+
+    assign serial_out = shift_reg[0];
+endmodule
+
+TESTBENCH CODE (tb_sipo_reg.v)
+
+`timescale 1ns / 1ps
+module tb_sipo_reg;
+    reg clk, rst, mode, load, serial_in;
+    reg [3:0] parallel_in;
+    wire [3:0] parallel_out;
+    wire serial_out;
+
+    sipo_reg DUT (
+        .clk(clk), .rst(rst), .mode(mode), .load(load),
+        .serial_in(serial_in), .parallel_in(parallel_in),
+        .parallel_out(parallel_out), .serial_out(serial_out)
+    );
+
+    always #5 clk = ~clk;
+
+    initial begin
+        $monitor("time=%0t mode=%b load=%b serial_in=%b parallel_in=%b parallel_out=%b serial_out=%b",
+                 $time, mode, load, serial_in, parallel_in, parallel_out, serial_out);
+        clk = 0; rst = 1; mode = 0; load = 0;
+        serial_in = 0; parallel_in = 4'b0000;
+        #12 rst = 0;
+
+        // SIPO: shift in 1, 0, 1, 1; parallel output becomes 1011
+        mode = 0;
+        @(negedge clk) serial_in = 1;
+        @(negedge clk) serial_in = 0;
+        @(negedge clk) serial_in = 1;
+        @(negedge clk) serial_in = 1;
+
+        // PISO: load 1011, then shift four bits out at serial_out
+        mode = 1;
+        parallel_in = 4'b1011;
+        load = 1;
+        @(negedge clk) load = 0;
+        repeat (4) @(negedge clk);
+        #10;
+        $finish;
+    end
+endmodule
+
+============================================================
+ADDITIONAL CODE FROM THE UPLOADED D/T-FLIP-FLOP QUESTION: 4-BIT PIPO REGISTER USING D FLIP-FLOPS
+============================================================
+
+DESIGN CODE (pipo_register.v)
+
+module pipo_register (
+    input  wire       clk,
+    input  wire       rst_n,
+    input  wire [3:0] d,
+    output reg  [3:0] q
+);
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n)
+            q <= 4'b0000;
+        else
+            q <= d;
+    end
+endmodule
+
+TESTBENCH CODE (tb_pipo_register.v)
+
+`timescale 1ns / 1ps
+module tb_pipo_register;
+    reg clk, rst_n;
+    reg [3:0] d;
+    wire [3:0] q;
+
+    pipo_register DUT (.clk(clk), .rst_n(rst_n), .d(d), .q(q));
+
+    always #5 clk = ~clk;
+
+    initial begin
+        $monitor("time=%0t rst_n=%b d=%b q=%b", $time, rst_n, d, q);
+        clk = 0; rst_n = 0; d = 4'b0000;
+        #10 rst_n = 1;
+        #10 d = 4'b1010;
+        #10 d = 4'b1100;
+        #10 d = 4'b0110;
+        #10 d = 4'b1111;
+        #10 d = 4'b0001;
+        #20 $finish;
+    end
+endmodule
+
+============================================================
+ADDITIONAL CODE: D FLIP-FLOP (1-BIT)
+============================================================
+
+DESIGN CODE (d_flip_flop.v)
+
+module d_flip_flop (
+    input  wire clk,
+    input  wire rst_n,
+    input  wire d,
+    output reg  q
+);
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n)
+            q <= 1'b0;
+        else
+            q <= d;
+    end
+endmodule
+
+TESTBENCH CODE (tb_d_flip_flop.v)
+
+`timescale 1ns / 1ps
+module tb_d_flip_flop;
+    reg clk, rst_n, d;
+    wire q;
+
+    d_flip_flop DUT (.clk(clk), .rst_n(rst_n), .d(d), .q(q));
+    always #5 clk = ~clk;
+
+    initial begin
+        $monitor("time=%0t rst_n=%b d=%b q=%b", $time, rst_n, d, q);
+        clk = 0; rst_n = 0; d = 0;
+        #12 rst_n = 1;
+        @(negedge clk) d = 1;
+        @(negedge clk) d = 0;
+        @(negedge clk) d = 1;
+        @(negedge clk) d = 1;
+        #10 $finish;
+    end
+endmodule
+
+============================================================
+OPTIONAL: 100 MHz TO 1 Hz CLOCK DIVIDER (COUNTER-BASED)
+============================================================
+
+The Basys 3 board clock is 100 MHz. To generate a 1 Hz square wave, toggle the output after 50,000,000 input clock cycles. This creates a 0.5-second half-period and a 1-second full period.
+
+DESIGN CODE (clock_divider_1hz.v)
+
+module clock_divider_1hz #(
+    parameter integer HALF_PERIOD = 50000000
+) (
+    input  wire clk_100MHz,
+    input  wire rst,
+    output reg  clk_1Hz
+);
+    reg [31:0] counter;
+
+    always @(posedge clk_100MHz or posedge rst) begin
+        if (rst) begin
+            counter <= 32'd0;
+            clk_1Hz <= 1'b0;
+        end
+        else if (counter == HALF_PERIOD - 1) begin
+            counter <= 32'd0;
+            clk_1Hz <= ~clk_1Hz;
+        end
+        else begin
+            counter <= counter + 1'b1;
+        end
+    end
+endmodule
+
+TESTBENCH CODE (tb_clock_divider_1hz.v)
+
+`timescale 1ns / 1ps
+module tb_clock_divider_1hz;
+    reg clk_100MHz, rst;
+    wire clk_1Hz;
+
+    // Use a small count for simulation. The default design value is 50,000,000.
+    clock_divider_1hz #(.HALF_PERIOD(5)) DUT (
+        .clk_100MHz(clk_100MHz), .rst(rst), .clk_1Hz(clk_1Hz)
+    );
+
+    always #5 clk_100MHz = ~clk_100MHz;
+
+    initial begin
+        $monitor("time=%0t rst=%b divided_clock=%b", $time, rst, clk_1Hz);
+        clk_100MHz = 0; rst = 1;
+        #12 rst = 0;
+        #200 $finish;
+    end
+endmodule
+
+For actual Basys 3 hardware, leave HALF_PERIOD at its default 50,000,000. The simulation testbench overrides it to 5 so the divider can be observed quickly.
+
+============================================================
+IMPORTANT CHECKS BEFORE YOUR PRACTICAL
+============================================================
+
+1. JK reset correction: The uploaded student JK code used `posedge rst_n` and `if (rst_n)` while naming the signal rst_n. That makes it an active-high reset and conflicts with its testbench sequence. The corrected code above uses `negedge rst_n` and `if (!rst_n)`, i.e. active-low reset.
+2. T flip-flop reset: The T flip-flop and PIPO code from the D/T question use active-low `rst_n`. Keep it LOW to reset and HIGH to run.
+3. SISO, SIPO/PISO, and synchronous up/down counter above use active-high `rst`. Keep it HIGH to reset and LOW to run.
+4. ALU carry/borrow: In the supplied carry version, the subtraction case set carry to zero. The version above instead asserts the flag when A<B, matching the practical question's requirement to indicate borrow.
+5. Experiment-number mismatch: The photo lists the 3-bit synchronous up/down counter as Experiment 6 and SISO as Experiment 7. The uploaded official SISO sheet is titled Experiment 6, while the uploaded counter sheet is titled Experiment 7. Follow the numbering used by your faculty during the practical.
+6. The Experiment 1 and Experiment 2 PDFs contain the practical instructions but no printed design/testbench code. The 4:1 mux and structural full-adder code above are complete implementations for those tasks.
+7. The uploaded counter sheet contains the experiment description and an additional Mod-8/4-bit-counter question, but no Verilog implementation. Both are supplied above.
+8. Experiment 8 is a VLSI Virtual Lab activity, not a Verilog practical code. Experiment 9 is a student-selected group VLSI project; its code depends on your selected project topic, which is not specified in the uploaded files.
+
+END OF CODE COLLECTION
